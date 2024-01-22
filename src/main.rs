@@ -1,33 +1,39 @@
 use std::io::Cursor;
 
-use clipboard_win::{formats, get_clipboard, raw, set_clipboard, Clipboard};
+use clipboard_win::{formats, get_clipboard, set_clipboard};
 use image::io::Reader as ImageReader;
 use image::ImageFormat;
 
 fn main() {
-    // let text = "my sample ><";
+    if let Err(e) = convert() {
+        println!("{:?}", e);
+    }
+}
 
-    println!("start");
-    let bmp: Vec<u8> = get_clipboard(formats::Bitmap).expect("bmp");
-    let mut bmp2 = bmp.clone();
-    bmp2.resize(20, 0);
-    println!("{:?}", bmp2);
+#[derive(Debug, Clone)]
+enum Error {
+    Clipboard(String),
+    Image(&'static str),
+}
 
-    let img2 = ImageReader::new(Cursor::new(bmp.as_slice()))
+fn convert() -> Result<(), Error> {
+    let bmp: Vec<u8> =
+        get_clipboard(formats::Bitmap)
+        .map_err(|e| Error::Clipboard(e.to_string()))?;
+
+    let dynamic = ImageReader::new(Cursor::new(bmp.as_slice()))
         .with_guessed_format()
-        .expect("not an image")
-        .decode()
-        .expect("couldn't decode");
+        .map_err(|_| Error::Image("dynamic decode failed"))?;
+
+    let img2 = dynamic.decode().expect("couldn't decode");
 
     let mut c = Cursor::new(Vec::<u8>::new());
     img2.write_to(&mut c, ImageFormat::Bmp)
         .expect("faild write vec");
 
     let out = c.into_inner();
-    let mut out2 = out.clone();
-    out2.resize(20, 0);
-    println!("{:?}", out2);
 
     set_clipboard(formats::Bitmap, out.as_slice()).expect("write");
-    println!("end");
+
+    Ok(())
 }
