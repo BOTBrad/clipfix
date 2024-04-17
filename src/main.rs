@@ -4,12 +4,11 @@ use clipboard_win::{formats, get_clipboard, set_clipboard};
 use image::io::Reader as ImageReader;
 use image::ImageFormat;
 
-fn main() {
-    if let Err(e) = convert() {
-        println!("{:?}", e);
-    }
+fn main() -> Result<(), Error> {
+  convert()
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum Error {
     Clipboard(String),
